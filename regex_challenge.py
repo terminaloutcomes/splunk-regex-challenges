@@ -5,8 +5,9 @@
 import json
 from json.decoder import JSONDecodeError
 import re
-
+import os
 import sys
+
 import click
 
 
@@ -76,6 +77,13 @@ def challenge(regex: str, filename: str):
 
 
     parse_challenge(filename, pattern)
+
+@cli.command(name="list")
+def list_challenges():
+    """ lists challenge files """
+    print("The following challenges exist:")
+    for filename in os.listdir("./challenges"):
+        print(f"./challenges/{filename}")
 
 if __name__ == '__main__':
     cli()
