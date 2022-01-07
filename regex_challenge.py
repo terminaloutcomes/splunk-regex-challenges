@@ -8,7 +8,17 @@ import re
 import os
 import sys
 
+
 import click
+from loguru import logger
+
+def load_challenge(file_object: click.File) -> dict:
+    """ loads a challenge file"""
+    try:
+        return json.load(file_object)
+    except JSONDecodeError as json_error:
+        logger.error(f"Failed to load {file_object.name}: {json_error}")
+    return {}
 
 
 def display_challenge(filename: str, data: dict) -> None:
@@ -19,64 +29,114 @@ def display_challenge(filename: str, data: dict) -> None:
     print("#"*50)
     print(data.get("input"))
     print("#"*50)
+    if data.get("matches"):
+        print("Expected Matches: ")
+        print(data.get("matches"))
+        print("#"*50)
+    if data.get("groups"):
+        print("Expected Groups: ")
+        print(data.get("groups"))
+        print("#"*50)
 
-    print("Expected Matches: ")
-    print("#"*50)
-    print(data.get("matches"))
-    print("#"*50)
+#pylint: disable=too-many-branches
+def run_pattern(challenge_data: dict, pattern: re.Pattern, show_text: bool=True):
+    """ runs the patterns """
 
-def parse_challenge(filepath: str, regex: re.Pattern):
-    """ do the parsing things"""
-    # with open(f"./challenges/{filename}", encoding="utf8") as file_handle:
-    try:
-        challenge_data = json.load(filepath)
-
-    except JSONDecodeError as json_error:
-        print(f"Failed to load {filepath}: {json_error}")
-    display_challenge(filepath.name, challenge_data)
+    results = {}
 
     if challenge_data.get("matches"):
-        result = regex.findall(challenge_data.get("input"))
+        result = pattern.findall(challenge_data.get("input"))
         if result:
-            print("Found matches:")
-            print(result)
-            print("#"*50)
-        if result != challenge_data.get("matches"):
-            print("Sorry, you didn't succeed.")
-        else:
-            print("Success!")
+            results["matches"] = False
+            if show_text:
+                print("Found matches:")
+                print(result)
+                print("#"*50)
+            if result == challenge_data.get("matches"):
+                if show_text:
+                    print("Success in matches!")
+                results["matches"] = True
+            elif show_text:
+                print("Sorry, you didn't succeed.")
     if challenge_data.get("groups"):
-        result = regex.groups(challenge_data.get("input"))
+        results["groups"] = False
+        result = list(pattern.search(challenge_data.get("input")).groups())
         if result:
-            print("Found groups:")
-            print(result)
-            print("#"*50)
-        if result != challenge_data.get("groups"):
-            print("Sorry, you didn't succeed.")
-
-
-    # print(json.dumps(challenge, indent=4, ensure_ascii=False))
+            if show_text:
+                print("Found groups:")
+                print(result)
+                print("#"*50)
+            if result == challenge_data.get("groups"):
+                if show_text:
+                    print("Success in groups!")
+                results["groups"] = True
+            elif show_text:
+                print("Sorry, you didn't succeed in groups.")
+        elif show_text:
+            print("Sorry, you didn't succeed in groups.")
+    return results
 
 @click.group()
 def cli():
     """ cli """
+
+def compile_regex_or_quit(pattern: str) -> re.Pattern:
+    """ compiles the regex """
+    try:
+        return re.compile(pattern)
+    except re.error as re_error:
+        logger.error(f"Failed to compile regex '{pattern}': {re_error}", file=sys.stderr)
+        sys.exit(1)
 
 @cli.command()
 @click.argument("filename",
     type=click.File(),
     )
 @click.argument("regex")
-def challenge(regex: str, filename: str):
-    """ cli for the challenge parser"""
+def challenge(filename: str, regex: str):
+    """ Test yourself! """
+    pattern = compile_regex_or_quit(regex)
+    challenge_data = load_challenge(filename)
 
-    try:
-        pattern = re.compile(regex)
-    except re.error as re_error:
-        print(f"Failed to compile regex '{regex}': {re_error}", file=sys.stderr)
+    display_challenge(filename.name, challenge_data)
+
+    run_pattern(challenge_data, pattern)
+
+@cli.command()
+@click.argument("filename",
+    type=click.File(),
+    )
+def test(filename: str):
+    """ tests a file """
+    challenge_data = load_challenge(filename)
+
+    logger.info(f"🔰 Testing {filename.name}")
+    fails = {}
+
+    for field in ("input", "creator", "matches", "groups"):
+        if not field in challenge_data:
+            if "missing_fields" not in fails:
+                fails["missing_fields"] = []
+            fails["missing_fields"] = field
+
+    if "example_solution" in challenge_data:
+        logger.debug("   Found example solution")
+        pattern = compile_regex_or_quit(challenge_data["example_solution"])
+        results = run_pattern(challenge_data, pattern, show_text=False)
+        for result in results: #pylint: disable=consider-using-dict-items
+            if not results[result]:
+                logger.error(f"[!] {result} failed with example regex {challenge_data['example_solution']}")
+                if "failed_results" not in fails:
+                    fails["failed_results"] = []
+                fails["failed_results"].append(result)
+
+    if fails:
+        logger.error("❌ {} FAILED!", filename.name)
+        logger.error(json.dumps(fails, indent=4, ensure_ascii=False))
         sys.exit(1)
+    else:
+        logger.info("✅ {} passes tests!", filename.name)
 
-
-    parse_challenge(filename, pattern)
 
 @cli.command(name="list")
 def list_challenges():

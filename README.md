@@ -53,5 +53,29 @@ Sorry, you didn't succeed.
 
 ## Writing challenge files
 
-TBA
-# splunk-regex-challenges
+Each challenge is spec'd as a JSON-formatted file:
+
+```json
+{
+    "input" : "hello world",
+    "matches" : [
+        "hello"
+    ],
+    "groups" : [
+        "hello"
+    ],
+    "creator" : "@yaleman",
+    "example_solution" : "(^\\w+)"
+}
+```
+
+You can test them by running `./regex_challenge.py test <filename>`, eg:
+
+
+```bash
+$ ./regex_challenge.py test "./challenges/2022-01-07-hello-world.json"
+2022-01-07 12:33:34.382 | INFO     | __main__:test:111 - # Testing ./challenges/2022-01-07-hello-world.json
+2022-01-07 12:33:34.382 | DEBUG    | __main__:test:121 - Found example solution
+2022-01-07 12:33:34.382 | INFO     | __main__:test:135 - ✅ ./challenges/2022-01-07-hello-world.json passes tests!
+
+```

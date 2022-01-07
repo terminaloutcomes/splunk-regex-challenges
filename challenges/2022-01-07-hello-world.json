@@ -1,0 +1,11 @@
+{
+    "input" : "hello world",
+    "matches" : [
+        "hello"
+    ],
+    "groups" : [
+        "hello"
+    ],
+    "creator" : "@yaleman",
+    "example_solution" : "(^\\w+)"
+}
