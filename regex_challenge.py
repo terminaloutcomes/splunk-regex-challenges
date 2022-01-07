@@ -44,6 +44,15 @@ def parse_challenge(filepath: str, regex: re.Pattern):
             print("Sorry, you didn't succeed.")
         else:
             print("Success!")
+    if challenge_data.get("groups"):
+        result = regex.groups(challenge_data.get("input"))
+        if result:
+            print("Found groups:")
+            print(result)
+            print("#"*50)
+        if result != challenge_data.get("groups"):
+            print("Sorry, you didn't succeed.")
+
 
     # print(json.dumps(challenge, indent=4, ensure_ascii=False))
 
