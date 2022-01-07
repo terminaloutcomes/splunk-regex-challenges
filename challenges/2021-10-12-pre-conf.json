@@ -1,0 +1,20 @@
+{
+    "input" : "bob\nsally\ngeorge\nbob\ngeorge\nbob\nsally\ndiego\ndianora\ndiego\n\noh look\nat my\nbeatiful\nbeautiful\nbeauiful\nbeatiful\nREGEX\nIT'S REGEX TASTIC\nREGEX\nIS\nBEATIFUL",
+    "matches" : [
+    "bob",
+    "sally",
+    "george",
+    "bob",
+    "george",
+    "bob",
+    "sally",
+    "diego",
+    "diego",
+    "beatiful",
+    "beatiful",
+    "REGEX",
+    "REGEX",
+    "BEATIFUL"
+    ],
+    "creator" : "@The_Tick"
+}
