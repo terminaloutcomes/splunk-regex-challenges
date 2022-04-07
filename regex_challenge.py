@@ -4,80 +4,121 @@
 
 import json
 from json.decoder import JSONDecodeError
-import re
 import os
+from pathlib import Path
+import re
 import sys
-
+from typing import List, Optional
 
 import click
 from loguru import logger
+from pydantic import BaseModel
 
-def load_challenge(file_object: click.File) -> dict:
+class ChallengeFile(BaseModel):
+    """ challenge file format """
+    input: str
+    matches: List[str] = []
+    exclusions: List[str] = []
+    groups: List[str] = []
+    creator: Optional[str] = "Unknown regex master."
+    example_solution: Optional[str]
+
+    class Config:
+        """ config """
+        arbitrary_types_allowed = True
+
+# {
+#     "input" : "hello world",
+#     "matches" : [
+#         "hello"
+#     ],
+#     "groups" : [
+#         "hello"
+#     ],
+#     "creator" : "@yaleman",
+#     "example_solution" : "(^\\w+)"
+# }
+
+def load_challenge(file_object: click.File) -> ChallengeFile:
     """ loads a challenge file"""
+    load_path = Path(file_object.name).expanduser().resolve()
     try:
-        return json.load(file_object)
+        file_json = json.loads(load_path.open(encoding="utf-8").read())
+        return ChallengeFile.parse_obj(file_json)
     except JSONDecodeError as json_error:
         logger.error(f"Failed to load {file_object.name}: {json_error}")
-    return {}
+        sys.exit()
 
-
-def display_challenge(filename: str, data: dict) -> None:
+def display_challenge(filename: str, data: ChallengeFile) -> None:
     """ displays the challenge data """
-    print(f"{filename} by {data.get('creator', 'Unknown')}")
+    print(f"{filename} by {data.creator}")
     print("#"*50)
     print("Input: ")
     print("#"*50)
-    print(data.get("input"))
+    print(data.input)
     print("#"*50)
-    if data.get("matches"):
+    if data.matches:
         print("Expected Matches: ")
-        print(data.get("matches"))
+        print(data.matches)
         print("#"*50)
-    if data.get("groups"):
+    print("#"*50)
+    if data.exclusions:
+        print("Things to exclude: ")
+        print(data.exclusions)
+        print("#"*50)
+    if data.groups:
         print("Expected Groups: ")
-        print(data.get("groups"))
+        print(data.groups)
         print("#"*50)
+
+class IncludedExclusions(Exception):
+    """ raised when you included results that should have been excluded."""
+class InvalidMatches(Exception):
+    """ raised when you don't match the required matches """
 
 #pylint: disable=too-many-branches
-def run_pattern(challenge_data: dict, pattern: re.Pattern, show_text: bool=True):
-    """ runs the patterns """
+def run_pattern(
+    challenge_data: ChallengeFile,
+    pattern: re.Pattern,
+    show_text: bool=True,
+    ) -> bool:
+    """ runs the pattern, returns bool if it succeeded or not """
 
-    results = {}
+    results = {
+    }
 
-    if challenge_data.get("matches"):
-        result = pattern.findall(challenge_data.get("input"))
-        if result:
-            results["matches"] = False
-            if show_text:
-                print("Found matches:")
-                print(result)
-                print("#"*50)
-            if result == challenge_data.get("matches"):
-                if show_text:
-                    print("Success in matches!")
-                results["matches"] = True
-            elif show_text:
-                print("Sorry, you didn't succeed.")
-    if challenge_data.get("groups"):
+    if challenge_data.matches:
+        result = pattern.findall(challenge_data.input)
+        if result is None or result != challenge_data.matches:
+            raise InvalidMatches
+    for exclusion in challenge_data.exclusions:
+        if exclusion in result:
+            logger.error("You matched {} which shouldn't be matched.", exclusion)
+            raise IncludedExclusions(exclusion)
+    if challenge_data.groups:
         results["groups"] = False
-        result = list(pattern.search(challenge_data.get("input")).groups())
-        if result:
+        search_result = pattern.search(challenge_data.input)
+
+        if search_result is not None:
+            result = list(search_result.groups())
             if show_text:
                 print("Found groups:")
                 print(result)
                 print("#"*50)
-            if result == challenge_data.get("groups"):
+            if result == challenge_data.groups:
                 if show_text:
                     print("Success in groups!")
                 results["groups"] = True
             elif show_text:
                 print("Sorry, you didn't succeed in groups.")
+                return False
         elif show_text:
             print("Sorry, you didn't succeed in groups.")
-    return results
+            return False
+    return True
 
 @click.group()
-def cli():
+def cli() -> None:
     """ cli """
 
 def compile_regex_or_quit(pattern: str) -> re.Pattern:
@@ -93,7 +134,7 @@ def compile_regex_or_quit(pattern: str) -> re.Pattern:
     type=click.File(),
     )
 @click.argument("regex")
-def challenge(filename: str, regex: str):
+def challenge(filename: click.File, regex: str) -> None:
     """ Test yourself! """
     pattern = compile_regex_or_quit(regex)
     challenge_data = load_challenge(filename)
@@ -106,42 +147,51 @@ def challenge(filename: str, regex: str):
 @click.argument("filename",
     type=click.File(),
     )
-def test(filename: str):
+def test(filename: click.File) -> None:
     """ tests a file """
     challenge_data = load_challenge(filename)
 
     logger.info(f"🔰 Testing {filename.name}")
-    fails = {}
+    # fails: Dict[str, Any] = {}
 
-    for field in ("input", "creator", "matches", "groups"):
-        if not field in challenge_data:
-            if "missing_fields" not in fails:
-                fails["missing_fields"] = []
-            fails["missing_fields"] = field
+    if not challenge_data.example_solution:
+        logger.error("Couldn't find a solution in {}", filename.name)
+        return
 
-    if "example_solution" in challenge_data:
-        logger.debug("   Found example solution")
-        pattern = compile_regex_or_quit(challenge_data["example_solution"])
-        results = run_pattern(challenge_data, pattern, show_text=False)
-        for result in results: #pylint: disable=consider-using-dict-items
-            if not results[result]:
-                logger.error(f"[!] {result} failed with example regex {challenge_data['example_solution']}")
-                if "failed_results" not in fails:
-                    fails["failed_results"] = []
-                fails["failed_results"].append(result)
+    logger.debug("   Found example solution:")
+    logger.debug(challenge_data.example_solution)
+    pattern = compile_regex_or_quit(challenge_data.example_solution)
+    try:
+        result = run_pattern(challenge_data, pattern, show_text=False)
+    except InvalidMatches:
+        logger.error("You didn't match the required strings.")
+        result = False
+    except IncludedExclusions:
+        result = False
 
-    if fails:
+        # for result in results: #pylint: disable=consider-using-dict-items
+        #     if not results[result]:
+        #         logger.error(
+        #             "[!] {} failed with example regex {}",
+        #             result,
+        #             challenge_data.example_solution,
+        #             )
+        #         if "failed_results" not in fails:
+        #             fails["failed_results"] = []
+        #         fails["failed_results"].append(result)
+
+    if not result:
         logger.error("❌ {} FAILED!", filename.name)
-        logger.error(json.dumps(fails, indent=4, ensure_ascii=False))
-        sys.exit(1)
+        # logger.error(json.dumps(fails, indent=4, ensure_ascii=False))
+        # sys.exit(1)
     else:
         logger.info("✅ {} passes tests!", filename.name)
 
 
 @cli.command(name="list")
-def list_challenges():
+def list_challenges() -> None:
     """ lists challenge files """
-    print("The following challenges exist:")
+    print("The following challenges exist:", file=sys.stderr)
     for filename in os.listdir("./challenges"):
         print(f"./challenges/{filename}")
 

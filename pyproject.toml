@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "splunk-regex-challenges"
+version = "0.0.2"
+description = "A framework for splunk regex challenges"
+authors = ["James Hodgkinson <james@terminaloutcomes.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+loguru = "^0.6.0"
+click = "^8.1.2"
+pydantic = "^1.9.0"
+
+[tool.poetry.dev-dependencies]
+pylint = "^2.13.5"
+pytest = "^7.1.1"
+black = "^22.3.0"
+mypy = "^0.942"
+pylint-pydantic = "^0.1.4"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pylint.MASTER]
+max-line-length=200
+max-locals=20
+disable="W0511"
+
+# https://github.com/samuelcolvin/pydantic/issues/1961#issuecomment-759522422
+extension-pkg-whitelist="pydantic"
+load-plugins="pylint_pydantic"

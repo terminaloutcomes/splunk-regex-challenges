@@ -19,5 +19,6 @@
     "groups" : [
 
     ],
+    "example_solution" : "^!is$",
     "creator" : "@The_Tick"
 }

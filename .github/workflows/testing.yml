@@ -28,4 +28,3 @@ jobs:
             python3 -m pylint regex_challenge.py
       - name: Running tests
         run: find ./challenges -type f -exec ./regex_challenge.py test "{}" \;
-
