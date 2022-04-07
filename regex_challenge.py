@@ -23,6 +23,7 @@ class ChallengeFile(BaseModel):
     creator: Optional[str] = "Unknown regex master."
     example_solution: Optional[str]
 
+    # pylint: disable=too-few-public-methods
     class Config:
         """ config """
         arbitrary_types_allowed = True
@@ -79,7 +80,7 @@ class InvalidMatches(Exception):
 #pylint: disable=too-many-branches
 def run_pattern(
     challenge_data: ChallengeFile,
-    pattern: re.Pattern,
+    pattern: re.Pattern[str],
     show_text: bool=True,
     ) -> bool:
     """ runs the pattern, returns bool if it succeeded or not """
@@ -121,7 +122,7 @@ def run_pattern(
 def cli() -> None:
     """ cli """
 
-def compile_regex_or_quit(pattern: str) -> re.Pattern:
+def compile_regex_or_quit(pattern: str) -> re.Pattern[str]:
     """ compiles the regex """
     try:
         return re.compile(pattern)

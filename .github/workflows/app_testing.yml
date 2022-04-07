@@ -1,4 +1,4 @@
-name: test the things
+name: test the challenges
 
 on:
   push:
@@ -20,11 +20,7 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Running pylint
-        uses: fylein/python-pylint-github-action@v4
-        with:
-          args: |
-            python3 -m pip install --no-cache --upgrade pip -r requirements.txt
-            python3 -m pylint regex_challenge.py
       - name: Running tests
-        run: find ./challenges -type f -exec ./regex_challenge.py test "{}" \;
+        run: |
+          python -m pip install .
+          python regex_challenge.py list | xargs -n1 python regex_challenge.py test
