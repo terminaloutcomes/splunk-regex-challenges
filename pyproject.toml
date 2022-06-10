@@ -15,7 +15,7 @@ pydantic = "^1.9.1"
 pylint = "^2.14.1"
 pytest = "^7.1.2"
 black = "^22.3.0"
-mypy = "^0.960"
+mypy = "^0.961"
 pylint-pydantic = "^0.1.4"
 
 [build-system]
