@@ -14,7 +14,7 @@ pydantic = "^1.10.1"
 [tool.poetry.dev-dependencies]
 pylint = "^2.15.0"
 pytest = "^7.1.2"
-black = "^22.6.0"
+black = "^22.8.0"
 mypy = "^0.971"
 pylint-pydantic = "^0.1.4"
 
