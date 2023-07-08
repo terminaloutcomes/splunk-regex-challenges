@@ -430,16 +430,16 @@ pylint = ">=1.7"
 
 [[package]]
 name = "pylint-pydantic"
-version = "0.1.8"
+version = "0.2.0"
 description = "A Pylint plugin to help Pylint understand the Pydantic"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pylint_pydantic-0.1.8-py3-none-any.whl", hash = "sha256:4033c67e06885115fa3bb16e3b9ce918ac6439a87e9b4d314158e09bc1067ecb"},
+    {file = "pylint_pydantic-0.2.0-py3-none-any.whl", hash = "sha256:f44e38239c0da3cd1f500f7382ce57aaceb23200c2a675367d3e34b458b597a3"},
 ]
 
 [package.dependencies]
-pydantic = "<2.0"
+pydantic = "<3.0"
 pylint = ">2.0,<3.0"
 pylint-plugin-utils = "*"
 
@@ -588,4 +588,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "cba2fff0477a576ad50ee300a314710176172524de12a9d77f3c2ad51e1fb5ce"
+content-hash = "535cf3aab0e8d653ac0aa77e64e4e4d63b9a6894c3573a6e5721a321d3f1284d"
