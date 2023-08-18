@@ -8,7 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.8"
 loguru = "^0.7.0"
-click = "^8.1.6"
+click = "^8.1.7"
 pydantic = "^2.1.1"
 
 [tool.poetry.dev-dependencies]
